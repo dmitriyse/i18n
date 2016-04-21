@@ -7,6 +7,8 @@ using i18n.Domain.Concrete;
 
 namespace i18n
 {
+    using i18n.Domain.Abstract;
+
     /// <summary>
     /// The i18n default implementaion of the INuggetLocalizer service.
     /// </summary>
@@ -16,7 +18,7 @@ namespace i18n
 
         private ITextLocalizer _textLocalizer;
 
-        private NuggetParser _nuggetParser;
+        private INuggetParser _nuggetParser;
 
         public NuggetLocalizer(
             i18nSettings settings,
@@ -25,11 +27,13 @@ namespace i18n
             _settings = settings;
             _textLocalizer = textLocalizer;
 
-            _nuggetParser = new NuggetParser(new NuggetTokens(
+            _nuggetParser = new RecursiveNuggetParser(new NuggetTokens(
 			    _settings.NuggetBeginToken,
 			    _settings.NuggetEndToken,
 			    _settings.NuggetDelimiterToken,
-			    _settings.NuggetCommentToken),
+			    _settings.NuggetCommentToken,
+                _settings.NuggetParameterBeginToken,
+                _settings.NuggetParameterEndToken),
                 NuggetParser.Context.ResponseProcessing);
         }
 

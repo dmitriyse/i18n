@@ -55,6 +55,7 @@
     <Compile Include="Abstract\ILanguageTag.cs" />
     <Compile Include="Abstract\INuggetFinder.cs" />
     <Compile Include="Abstract\AbstractSettingService.cs" />
+    <Compile Include="Abstract\INuggetParser.cs" />
     <Compile Include="Abstract\ITranslationRepository.cs" />
     <Compile Include="Concrete\CacheHandler.cs" />
     <Compile Include="Concrete\FsCacheDependency.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="Helpers\HashHelper.cs" />
     <Compile Include="Helpers\LockFreeProperty.cs" />
     <Compile Include="Helpers\NuggetParser.cs" />
+    <Compile Include="Helpers\RecursiveNuggetParser.cs" />
     <Compile Include="Helpers\StringExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

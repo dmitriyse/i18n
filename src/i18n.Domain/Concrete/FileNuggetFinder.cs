@@ -15,16 +15,18 @@ namespace i18n.Domain.Concrete
 	{
 		private i18nSettings _settings;
 
-        private NuggetParser _nuggetParser;
+        private INuggetParser _nuggetParser;
 
 		public FileNuggetFinder(i18nSettings settings)
 		{
             _settings = settings;
-            _nuggetParser = new NuggetParser(new NuggetTokens(
+            _nuggetParser = new RecursiveNuggetParser(new NuggetTokens(
 			    _settings.NuggetBeginToken,
 			    _settings.NuggetEndToken,
 			    _settings.NuggetDelimiterToken,
-			    _settings.NuggetCommentToken),
+			    _settings.NuggetCommentToken,
+                _settings.NuggetParameterBeginToken,
+                _settings.NuggetEndToken),
                 NuggetParser.Context.SourceProcessing);
 		}
 

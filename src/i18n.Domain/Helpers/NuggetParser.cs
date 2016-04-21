@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 
 namespace i18n.Helpers
 {
+    using i18n.Domain.Abstract;
+
     /// <summary>
     /// Describes a valid set of string tokens that define the format of a Nugget.
     /// </summary>
@@ -25,22 +27,30 @@ namespace i18n.Helpers
 		public string EndToken       { get; private set; }
 		public string DelimiterToken { get; private set; }
         public string CommentToken   { get; private set; }
+        public string ParameterBeginToken { get; private set; }
+        public string ParameterEndToken { get; private set; }
 
         public NuggetTokens(
 		    string beginToken,
 		    string endToken,
 		    string delimiterToken,
-		    string commentToken)
+		    string commentToken,
+            string parameterBeginToken,
+            string parameterEndToken)
         {
             if (!beginToken.IsSet())     { throw new ArgumentNullException("beginToken"); }
             if (!endToken.IsSet())       { throw new ArgumentNullException("endToken"); }
             if (!delimiterToken.IsSet()) { throw new ArgumentNullException("delimiterToken"); }
             if (!commentToken.IsSet())   { throw new ArgumentNullException("commentToken"); }
+            if (!parameterBeginToken.IsSet()) { throw new ArgumentNullException("parameterBeginToken");}
+            if (!parameterEndToken.IsSet()) { throw new ArgumentNullException("parameterEndToken"); }
 
             BeginToken = beginToken;
             EndToken = endToken;
             DelimiterToken = delimiterToken;
             CommentToken = commentToken;
+            ParameterBeginToken = parameterBeginToken;
+            ParameterEndToken = parameterEndToken;
         }
     }
 
@@ -112,7 +122,7 @@ namespace i18n.Helpers
     /// <summary>
     /// Helper class for locating and processing nuggets in a string.
     /// </summary>
-    public class NuggetParser
+    public class NuggetParser: INuggetParser
     {
         /// <summary>
         /// Set during CON to nugget definition tokens.
