@@ -148,5 +148,18 @@ namespace i18n.Tests
             string post = obj.ProcessNuggets(pre, languages);
             Assert.AreEqual("!Some !Nested Nugget! is required!", post);
         }
+
+        [TestMethod]
+        [Description("Issue #169: Translate parameter.")]
+        public void NuggetLocalizer_can_translate_nested_nugget_hard()
+        {
+            ITextLocalizer textLocalizer = new TextLocalizer_Mock_PrefixSuffix("!", "!");
+            i18n.NuggetLocalizer obj = new i18n.NuggetLocalizer(new i18nSettings(new WebConfigSettingService(null)), textLocalizer);
+
+            string pre = "[[[Error %0. %1 (%2)|||03/04/2015|||((([[[Error Details]]])))|||Test]]]";
+            // Value for second variable is missing.
+            string post = obj.ProcessNuggets(pre, languages);
+            Assert.AreEqual("!Error 03/04/2015. !Error Details! (Test)!", post);
+        }
     }
 }

@@ -196,6 +196,9 @@ namespace i18n.Helpers
                             };
                         }
                     }
+
+                    processedZone.Append(m_entity.Substring(nextPosition, match.Index + match.Length - nextPosition));
+                    nextPosition = match.Index + match.Length;
                 }
             }
 
@@ -290,6 +293,7 @@ namespace i18n.Helpers
                         var result = ParseAndProcessNuggetZone(match.Index + match.Length, true);
                         nextPosition = result.NextPosition;
                         formatItems.Add(result.Replacement);
+                        parameterStartPosition = null;
                         continue;
                     }
 
