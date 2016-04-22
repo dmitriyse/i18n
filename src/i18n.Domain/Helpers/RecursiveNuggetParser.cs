@@ -270,20 +270,20 @@ namespace i18n.Helpers
                     {
                         case ".sql":
                             unescaped = UnescapeSql(msgId);
-                            return EscapeCSharp(unescaped);
+                            return unescaped;
                         case ".cs":
                             unescaped = UnescapeCSharp(msgId);
-                            return EscapeCSharp(unescaped);
+                            return unescaped;
                         case ".js":
                             unescaped = UnescapeJavascript(msgId);
-                            return EscapeCSharp(unescaped);
+                            return unescaped;
                         default:
-                            return EscapeCSharp(msgId);
+                            return msgId;
                     }
 
                 }
 
-                return EscapeCSharp(msgId);
+                return msgId;
             }
 
             private string UnescapeCSharp(string str)
@@ -449,7 +449,7 @@ namespace i18n.Helpers
                         {
                             var result = new ParseAndProccessResult { ContainNuggets = true, NextPosition = match.Index + match.Length};
 
-                            if (formatItems.Any() && m_owner.m_context == NuggetParser.Context.SourceProcessing)
+                            if (formatItems.Any() && m_owner.m_context == NuggetParser.Context.ResponseProcessing)
                             {
                                 nugget.FormatItems = formatItems.ToArray();
                             }
