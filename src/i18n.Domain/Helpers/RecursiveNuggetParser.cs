@@ -22,7 +22,8 @@ namespace i18n.Helpers
 
         private static readonly Dictionary<string, string> m_unescapeSqlTranslation = new Dictionary<string, string>
                                                                                 {
-                                                                                    { "%%", "%" }
+                                                                                    { "%%", "%" },
+                                                                                    { "''", "," }
                                                                                 };
 
         private static readonly Dictionary<string, string> m_unescapeJavascriptTranslation = new Dictionary<string, string>
