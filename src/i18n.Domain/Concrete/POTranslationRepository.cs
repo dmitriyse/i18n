@@ -245,7 +245,35 @@ namespace i18n.Domain.Concrete
                     }
 
                     WriteString(stream, hasReferences, "msgid", escape(item.MsgId));
-                    WriteString(stream, hasReferences, "msgstr", escape(item.Message));
+                    if (translation.LanguageInformation.LanguageShortTag == "zh-Hans")
+                    {
+                        if (string.IsNullOrEmpty(item.Message))
+                        {
+                            WriteString(stream, hasReferences, "msgstr", escape("_" + item.MsgId + "_"));
+                        }
+                        else
+                        {
+                            WriteString(stream, hasReferences, "msgstr", escape(item.Message));
+                        }
+                    }
+
+                    if (translation.LanguageInformation.LanguageShortTag == "zh-Hant")
+                    {
+                        if (string.IsNullOrEmpty(item.Message))
+                        {
+                            WriteString(stream, hasReferences, "msgstr", escape("!" + item.MsgId + "!"));
+                        }
+                        else
+                        {
+                            WriteString(stream, hasReferences, "msgstr", escape(item.Message));
+                        }
+                    }
+
+                    if (translation.LanguageInformation.LanguageShortTag == "en")
+                    {
+                        WriteString(stream, hasReferences, "msgstr", escape(item.Message));
+                    }
+
 
                     stream.WriteLine("");
 				}
