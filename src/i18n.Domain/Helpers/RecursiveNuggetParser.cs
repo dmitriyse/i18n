@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 namespace i18n.Helpers
 {
     using System.Collections.Generic;
+    using System.Configuration;
     using System.Linq;
 
     using i18n.Domain.Abstract;
@@ -18,6 +19,64 @@ namespace i18n.Helpers
         private string m_parameterEndBeforeDelimiterToken;
 
         private string m_parameterEndBeforeEndToken;
+
+        private static readonly Dictionary<string, string> m_unescapeSqlTranslation = new Dictionary<string, string>
+                                                                                {
+                                                                                    { "%%", "%" }
+                                                                                };
+
+        private static readonly Dictionary<string, string> m_unescapeJavascriptTranslation = new Dictionary<string, string>
+                                                                                       {
+                                                                                            { "\\n", "\n" },
+                                                                                            { "\n", "\r\n" },
+                                                                                            { "\\t", "\t" },
+                                                                                            { "\\\"", "\"" },
+                                                                                            { "\\\\", "\\" },
+                                                                                            { "\\'", "'" }
+                                                                                       };
+        private static readonly Dictionary<string, string> m_unescapeCSharpTranslation = new Dictionary<string, string>
+                                                                        {
+                                                                            { "\\n", "\n" },
+                                                                            { "\n", "\r\n" },
+                                                                            { "\\t", "\t" },
+                                                                            { "\\\"", "\"" },
+                                                                            { "\\\\", "\\" },
+                                                                            { "\"\"", "\"" }
+                                                                        };
+        private static readonly Dictionary<string, string> m_escapeCSharpTranslation = new Dictionary<string, string>
+                                                                      {
+                                                                          { "\n", "\\n" },
+                                                                          { "\r\n", "\n" },
+                                                                          { "\t", "\\t" },
+                                                                          { "\"", "\\\"" },
+                                                                          { "\\", "\\\\" }
+                                                                      };
+
+        private static readonly Regex m_unescapeSqlRegex;
+
+        private static readonly Regex m_unescapeJavascriptRegex;
+
+        private static readonly Regex m_unescapeCSharpRegex;
+
+        private static readonly Regex m_escapeCSharpRegex;
+
+        static RecursiveNuggetParser()
+        {
+            var escapeRegexPatternRegex = new Regex("(.)", RegexOptions.Singleline);
+
+            Func<Dictionary<string,string>, Regex> regexGenFunc = t =>
+                new Regex(
+                    string.Join(
+                        "|",
+                        t.Keys.Select(x => string.Format("({0})", escapeRegexPatternRegex.Replace(x, "\\$1")))
+                            .OrderByDescending(x => x.Length)),
+                    RegexOptions.Singleline | RegexOptions.Compiled);
+
+            m_unescapeCSharpRegex = regexGenFunc(m_unescapeCSharpTranslation);
+            m_unescapeJavascriptRegex = regexGenFunc(m_unescapeJavascriptTranslation);
+            m_unescapeSqlRegex = regexGenFunc(m_unescapeSqlTranslation);
+            m_escapeCSharpRegex = regexGenFunc(m_escapeCSharpTranslation);
+        }
 
         /// <summary>
         /// Set during CON to nugget definition tokens.
@@ -82,21 +141,9 @@ namespace i18n.Helpers
         /// </returns>
         public string ParseString(
             string entity,
-            Func<string, int, Nugget, string, string> ProcessNugget)
+            Func<string, int, Nugget, string, string> ProcessNugget, string fileExtension)
         {
-            return new ParseOperation(this, entity, ProcessNugget).ParseAndProccess();
-        }
-
-
-        /// <summary>
-        /// Parses a nugget string to breakdown the nugget into individual components.
-        /// </summary>
-        /// <param name="nugget">Subject nugget string.</param>
-        /// <returns>If successful, returns Nugget instance; otherwise returns null indicating a badly formatted nugget string.</returns>
-        public Nugget BreakdownNugget(string nugget)
-        {
-            Match match = m_tokensRegex.Match(nugget);
-            return NuggetFromRegexMatch(match);
+            return new ParseOperation(this, entity, ProcessNugget, fileExtension).ParseAndProccess();
         }
 
         private class ParseOperation
@@ -105,16 +152,20 @@ namespace i18n.Helpers
 
             private readonly string m_entity;
 
-            private readonly StringBuilder m_result;
-
             private readonly Func<string, int, Nugget, string, string> m_processNugget;
 
-            public ParseOperation(RecursiveNuggetParser owner, string entity, Func<string, int, Nugget, string, string> processNugget)
+            private readonly string m_fileExtension;
+
+            public ParseOperation(
+                RecursiveNuggetParser owner,
+                string entity,
+                Func<string, int, Nugget, string, string> processNugget,
+                string fileExtension)
             {
                 m_owner = owner;
                 m_entity = entity;
-                m_result = new StringBuilder();
                 m_processNugget = processNugget;
+                m_fileExtension = fileExtension;
             }
 
             public string ParseAndProccess()
@@ -160,18 +211,18 @@ namespace i18n.Helpers
                             {
                                 // This is original behavior of ((())).
                                 var stringToProccess = m_entity.Substring(nextPosition, match.Index - nextPosition);
+                                
                                 var nugget = new Nugget
                                                  {
                                                      MsgId =
                                                          stringToProccess
                                                  };
-
                                 string fakeNuggetString = string.Format(
                                     "{0}{1}{2}",
                                     m_owner.m_nuggetTokens.BeginToken,
                                     stringToProccess,
                                     m_owner.m_nuggetTokens.EndToken);
-
+                                nugget.MsgId = PreProccessMsgId(nugget.MsgId);
                                 string modifiedNuggetString = m_processNugget(
                                     fakeNuggetString, // entire nugget string
                                     m_owner.m_nuggetTokens.BeginToken.Length, // zero-based pos of the first char of entire nugget string
@@ -202,6 +253,68 @@ namespace i18n.Helpers
                 }
             }
 
+            private string PreProccessMsgId(string msgId)
+            {
+                if (m_owner.m_context == NuggetParser.Context.SourceProcessing)
+                {
+                    string unescaped;
+                    switch (m_fileExtension.ToLower())
+                    {
+                        case "sql":
+                            unescaped = UnescapeSql(msgId);
+                            return EscapeCSharp(unescaped);
+                        case "cs":
+                            unescaped = UnescapeCSharp(msgId);
+                            return EscapeCSharp(unescaped);
+                        case "js":
+                            unescaped = UnescapeJavascript(msgId);
+                            return EscapeCSharp(unescaped);
+                        default:
+                            return EscapeCSharp(msgId);
+                    }
+
+                }
+
+                return EscapeCSharp(msgId);
+            }
+
+            private string UnescapeCSharp(string str)
+            {
+                return ReplaceByPattern(m_unescapeCSharpTranslation, m_unescapeCSharpRegex, str);
+            }
+
+            private string UnescapeJavascript(string str)
+            {
+                return ReplaceByPattern(m_unescapeJavascriptTranslation, m_unescapeJavascriptRegex, str);
+            }
+
+            private string UnescapeSql(string str)
+            {
+                return ReplaceByPattern(m_unescapeSqlTranslation, m_unescapeSqlRegex, str);
+            }
+
+            private string EscapeCSharp(string str)
+            {
+
+                return ReplaceByPattern(m_escapeCSharpTranslation, m_escapeCSharpRegex, str);
+            }
+
+            private string ReplaceByPattern(Dictionary<string,string> translation, Regex regex, string str)
+            {
+                return regex.Replace(
+                    str,
+                    m =>
+                        {
+                            string replace;
+                            if (translation.TryGetValue(m.Value, out replace))
+                            {
+                                return replace;
+                            }
+
+                            return m.Value;
+                        });
+            }
+
             /// <summary>
             /// Process nugget.
             /// </summary>
@@ -209,7 +322,6 @@ namespace i18n.Helpers
             /// <returns>Parse result.</returns>
             private ParseAndProccessResult ParseAndProcessNugget(int position, bool isNested)
             {
-
                 // Position of the comment block starting from token
                 int? commentStartPosition = null;
                 int? parameterStartPosition = null;
@@ -356,12 +468,17 @@ namespace i18n.Helpers
                                 var virtualEntityString = virtualEntity.ToString();
 
                                 // Processing nugget
+                                var originalMsgId = nugget.MsgId;
+                                nugget.MsgId = PreProccessMsgId(nugget.MsgId);
                                 var replaceString = m_processNugget(virtualEntityString, 0, nugget, virtualEntityString);
-                                result.Replacement = replaceString ?? nugget.MsgId;
+                                result.Replacement = replaceString ?? originalMsgId;
                             }
                             else
                             {
                                 // Processing nugget
+                                var originalMsgId = nugget.MsgId;
+                                nugget.MsgId = PreProccessMsgId(nugget.MsgId);
+
                                 var replaceString =
                                     m_processNugget(
                                         m_entity.Substring(
@@ -372,7 +489,7 @@ namespace i18n.Helpers
                                         nugget, // broken-down nugget
                                         m_entity); // source entity string
 
-                                result.Replacement = replaceString ?? nugget.MsgId;
+                                result.Replacement = replaceString ?? originalMsgId;
                             }
 
                             return result;
@@ -418,44 +535,6 @@ namespace i18n.Helpers
                 str1.Append(c);
             }
             return str1.ToString();
-        }
-
-        /// <summary>
-        /// Returns a nugget instance loaded from a regex match, or null if error.
-        /// </summary>
-        private Nugget NuggetFromRegexMatch(Match match)
-        {
-            if (!match.Success
-                || match.Groups.Count != 4)
-            {
-                return null;
-            }
-            Nugget n = new Nugget();
-            // Extract msgid from 2nd capture group.
-            n.MsgId = match.Groups[1].Value;
-            // Extract format items from 3rd capture group.
-            var formatItems = match.Groups[2].Captures;
-            if (formatItems.Count != 0)
-            {
-                n.FormatItems = new string[formatItems.Count];
-                int i = 0;
-                foreach (Capture capture in formatItems)
-                {
-                    if (m_context == NuggetParser.Context.SourceProcessing
-                        && !capture.Value.IsSet())
-                    {
-                        return null;
-                    } // bad format
-                    n.FormatItems[i++] = capture.Value;
-                }
-            }
-            // Extract comment from 4th capture group.
-            if (match.Groups[3].Value.IsSet())
-            {
-                n.Comment = match.Groups[3].Value;
-            }
-            // Success.
-            return n;
         }
     }
 }

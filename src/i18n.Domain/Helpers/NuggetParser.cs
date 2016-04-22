@@ -188,7 +188,7 @@ namespace i18n.Helpers
         /// </returns>
         public string ParseString(
             string entity, 
-            Func<string, int, Nugget, string, string> ProcessNugget)
+            Func<string, int, Nugget, string, string> ProcessNugget, string fileExtension = null)
         {
         // Note that this method has two-levels of delegates:
         //   Outer delegate is the delegate which is called by regex as it matches each nugget

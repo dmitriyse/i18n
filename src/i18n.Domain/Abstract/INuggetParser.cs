@@ -6,6 +6,6 @@ namespace i18n.Domain.Abstract
 
     public interface INuggetParser
     {
-        string ParseString(string entity, Func<string, int, Nugget, string, string> func);
+        string ParseString(string entity, Func<string, int, Nugget, string, string> func, string fileExtension = null);
     }
 }

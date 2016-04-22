@@ -112,6 +112,8 @@ namespace i18n.Domain.Concrete
            // Lookup any/all nuggets in the file and for each add a new template item.
 			using (var fs = File.OpenText(filePath))
 			{
+			    var extension = Path.GetExtension(filePath);
+
                 _nuggetParser.ParseString(fs.ReadToEnd(), delegate(string nuggetString, int pos, Nugget nugget, string i_entity)
                 {
 				    AddNewTemplateItem(
@@ -121,7 +123,7 @@ namespace i18n.Domain.Concrete
                         templateItems);
                    // Done.
                     return null; // null means we are not modifying the entity.
-                });
+                }, extension);
             }
         }
 
