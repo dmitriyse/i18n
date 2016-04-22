@@ -217,18 +217,25 @@ namespace i18n.Helpers
                                                      MsgId =
                                                          stringToProccess
                                                  };
-                                string fakeNuggetString = string.Format(
-                                    "{0}{1}{2}",
-                                    m_owner.m_nuggetTokens.BeginToken,
-                                    stringToProccess,
-                                    m_owner.m_nuggetTokens.EndToken);
-                                nugget.MsgId = PreProccessMsgId(nugget.MsgId);
-                                string modifiedNuggetString = m_processNugget(
-                                    fakeNuggetString, // entire nugget string
-                                    m_owner.m_nuggetTokens.BeginToken.Length, // zero-based pos of the first char of entire nugget string
-                                    nugget,                // broken-down nugget
-                                    fakeNuggetString);               // source entity string
-                                                           // Returns either modified nugget string, or original nugget string (i.e. for no replacement).
+                                string modifiedNuggetString = null;
+
+                                if (m_owner.m_context == NuggetParser.Context.SourceProcessing)
+                                {
+                                    string fakeNuggetString = string.Format(
+                                        "{0}{1}{2}",
+                                        m_owner.m_nuggetTokens.BeginToken,
+                                        stringToProccess,
+                                        m_owner.m_nuggetTokens.EndToken);
+                                    nugget.MsgId = PreProccessMsgId(nugget.MsgId);
+
+                                    modifiedNuggetString = m_processNugget(
+                                        fakeNuggetString, // entire nugget string
+                                        m_owner.m_nuggetTokens.BeginToken.Length, // zero-based pos of the first char of entire nugget string
+                                        nugget,                // broken-down nugget
+                                        fakeNuggetString);               // source entity string
+                                                                         // Returns either modified nugget string, or original nugget string (i.e. for no replacement).
+                                }
+
                                 return new ParseAndProccessResult
                                            {
                                                Replacement = modifiedNuggetString ?? stringToProccess,
@@ -258,15 +265,15 @@ namespace i18n.Helpers
                 if (m_owner.m_context == NuggetParser.Context.SourceProcessing)
                 {
                     string unescaped;
-                    switch (m_fileExtension.ToLower())
+                    switch ((m_fileExtension ?? string.Empty).ToLower())
                     {
-                        case "sql":
+                        case ".sql":
                             unescaped = UnescapeSql(msgId);
                             return EscapeCSharp(unescaped);
-                        case "cs":
+                        case ".cs":
                             unescaped = UnescapeCSharp(msgId);
                             return EscapeCSharp(unescaped);
-                        case "js":
+                        case ".js":
                             unescaped = UnescapeJavascript(msgId);
                             return EscapeCSharp(unescaped);
                         default:
@@ -441,7 +448,7 @@ namespace i18n.Helpers
                         {
                             var result = new ParseAndProccessResult { ContainNuggets = true, NextPosition = match.Index + match.Length};
 
-                            if (formatItems.Any())
+                            if (formatItems.Any() && m_owner.m_context == NuggetParser.Context.SourceProcessing)
                             {
                                 nugget.FormatItems = formatItems.ToArray();
                             }
