@@ -7,6 +7,8 @@ namespace i18n.Helpers
     using System.Collections.Generic;
     using System.Configuration;
     using System.Linq;
+    using System.Web;
+    using System.Web.UI;
 
     using i18n.Domain.Abstract;
     /// <summary>
@@ -276,6 +278,11 @@ namespace i18n.Helpers
                             return unescaped;
                         case ".js":
                             unescaped = UnescapeJavascript(msgId);
+                            return unescaped;
+                        case ".xml":
+                        case ".html":
+                        case ".resx":
+                            unescaped = HttpUtility.HtmlDecode(msgId);
                             return unescaped;
                         default:
                             return msgId;
