@@ -57,7 +57,7 @@ namespace i18n.Domain.Concrete
                     }
 
 					blacklistFound = false;
-                    currentFullPath = Path.GetDirectoryName(Path.GetFullPath(filePath));
+                    currentFullPath = Path.GetFullPath(filePath);
                     foreach (var blackItem in _settings.BlackList)
                     {
                         if (currentFullPath == null || currentFullPath.StartsWith(blackItem, StringComparison.OrdinalIgnoreCase))
